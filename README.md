@@ -1,0 +1,1 @@
+Install into moodle/admin/tool/assignroles

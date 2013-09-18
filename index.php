@@ -162,8 +162,7 @@ if ($userid) {
               <select name="removeselect[]" size="40" id="removeselect" multiple="multiple"
                   onfocus="getElementById(\'assignrole\').add.disabled=true;
                    getElementById(\'assignrole\').remove.disabled=false;
-                   getElementById(\'assignrole\').addselect.selectedIndex=-1;"
-                  style="width: 40; overflow: clip;">';
+                   getElementById(\'assignrole\').addselect.selectedIndex=-1;">';
  
     // Abbreviate long names and create menu items for already-assigned courses
     foreach ($existingcourses as $key => $ec) {
