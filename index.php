@@ -110,9 +110,11 @@ if ($userid) {
 
             foreach ($form->removeselect as $cid) {
                 $cid = clean_param($cid, PARAM_INT);
-                // Check all manual and self enrolment methods (cohort, meta, category
-                // and system should not be handled by this tool)
-                $enrols = $DB->get_records_list('enrol', 'enrol', array('manual','self'), $sort='sortorder,id');
+                // Check all manual and self enrolment methods for this course (cohort,
+                // meta, category and system should not be handled by this tool)
+                $enrols = $DB->get_records_select('enrol',
+                    "courseid=$cid and (enrol='manual' or enrol='self')",
+                    null, $sort='sortorder,id');
 
                 foreach ($enrols as $enrol) {
                     // There's no error trapping here because unenrol_user() does not have a
