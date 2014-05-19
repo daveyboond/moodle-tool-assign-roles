@@ -26,9 +26,11 @@
 
 require_once('../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
+require_once($CFG->libdir.'/datalib.php');
 require_once($CFG->libdir.'/enrollib.php');
 require_once('locallib.php');
 require_once($CFG->dirroot.'/user/filters/lib.php');
+require_once("$CFG->dirroot/enrol/locallib.php");
 
 // Check permissions
 require_login();
@@ -89,7 +91,10 @@ if ($userid) {
 
                 $cid = clean_param($cid, PARAM_INT);
                 
-                // Enrol user using function from enrollib.php - this will be a manual enrolment
+                // Enrol user using function from enrollib.php - this will be a
+                // manual enrolment. I should probably use the enrolment manager
+                // object here like I do for removing roles, but this seems to work
+                // so let's leave it.
                 if (!enrol_try_internal_enrol($cid, $userid, $roleid, time())) {
                     $errstr = new stdClass();
                     $errstr->name = $fullname;
@@ -110,17 +115,22 @@ if ($userid) {
 
             foreach ($form->removeselect as $cid) {
                 $cid = clean_param($cid, PARAM_INT);
-                // Check all manual and self enrolment methods for this course (cohort,
-                // meta, category and system should not be handled by this tool)
-                $enrols = $DB->get_records_select('enrol',
-                    "courseid=$cid and (enrol='manual' or enrol='self')",
-                    null, $sort='sortorder,id');
-
-                foreach ($enrols as $enrol) {
-                    // There's no error trapping here because unenrol_user() does not have a
-                    // return value. We just assume that it worked :(
-                    $enrolment = enrol_get_plugin($enrol->enrol);
-                    $enrolment->unenrol_user($enrol, $userid);
+                // Create a enrolment manager object for this course and use it to
+                // unassign the chosen role
+                $manager = new course_enrolment_manager($PAGE, get_course($cid));
+                $manager->unassign_role_from_user($userid, $roleid);
+                // Check if any roles remain, and unenrol the user if not
+                $rolesremaining = $manager->get_user_roles($userid);
+                if (count($rolesremaining) == 0) {
+                    $enrolments = $manager->get_user_enrolments($userid);
+                    // Check all manual and self enrolment methods for this course (cohort,
+                    // meta, category and system should not be handled by this tool)
+                    foreach ($enrolments as $enrolment) {
+                        if ($enrolment->enrolmentinstance->enrol == 'manual'
+                                or $enrolment->enrolmentinstance->enrol == 'self') {
+                            $manager->unenrol_user($enrolment);
+                        }
+                    }
                 }
             }
         }
